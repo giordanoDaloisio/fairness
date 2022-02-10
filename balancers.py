@@ -20,7 +20,7 @@ from sklearn.metrics import roc_curve
 import tools
 
 
-class BinaryBalancer:
+class PredictionBalancer:
     def __init__(self,
                  y,
                  y_,
@@ -274,6 +274,7 @@ class BinaryBalancer:
         
         if summary:
             self.summary(org=False)
+            return self.y_adj
         
         if return_optima:                
             return {'loss': self.theoretical_loss, 'roc': self.roc}
