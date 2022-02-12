@@ -32,6 +32,8 @@ def disparate_impact(data_pred: pd.DataFrame, group_condition: dict, label_name:
                          / len(data_pred.query(query)))
     priv_group_prob = (len(data_pred.query('~(' + query + ')&' + label_query))
                        / len(data_pred.query('~(' + query+')')))
+    #if( (unpriv_group_prob == 0) & (priv_group_prob == 0) ):
+     #   return 0
     return min(unpriv_group_prob / priv_group_prob, priv_group_prob/unpriv_group_prob) if unpriv_group_prob != 0 else unpriv_group_prob / priv_group_prob
 
 
@@ -381,16 +383,16 @@ def plot_gridmulti(dfs, ys, iter, types, metrics, name='GridMulti'):
 
 def preparepoints(metrics, iters):
 
-    types = {'Stastical Parity (Exp Gradient)': 'xb',
-             'Zero One Loss (Exp Gradient)': 'xy',
-             'Disparate Impact (Exp Gradient)': 'xg',
-             'Accuracy (Exp Gradient)': 'xr',
+    types = {'Stastical Parity (Blackbox)': 'xb',
+             'Zero One Loss (Blackbox)': 'xy',
+             'Disparate Impact (Blackbox)': 'xg',
+             'Accuracy (Blackbox)': 'xr',
              }
 
-    rename = {'Stastical Parity (Exp Gradient)': 'stat_par',
-              'Zero One Loss (Exp Gradient)': 'zero_one_loss',
-              'Disparate Impact (Exp Gradient)': 'disp_imp',
-              'Accuracy (Exp Gradient)': 'acc'
+    rename = {'Stastical Parity (Blackbox)': 'stat_par',
+              'Zero One Loss (Blackbox)': 'zero_one_loss',
+              'Disparate Impact (Blackbox)': 'disp_imp',
+              'Accuracy (Blackbox)': 'acc'
               }
 
     points = {}
