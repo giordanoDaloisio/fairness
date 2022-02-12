@@ -1,9 +1,7 @@
 """Debiasing binary predictions with linear programming.
 
-Binary implementation based on work by Hardt, Srebro, & Price (2016):
+Implementation based on work by Hardt, Srebro, & Price (2016):
 https://arxiv.org/pdf/1610.02413.pdf
-
-Multiclass implementation based on forthcoming publication at SafeAI 2022
 """
 
 import pandas as pd
@@ -20,7 +18,7 @@ from sklearn.metrics import roc_curve
 import tools
 
 
-class PredictionBalancer:
+class BinaryBalancer:
     def __init__(self,
                  y,
                  y_,
@@ -274,7 +272,6 @@ class PredictionBalancer:
         
         if summary:
             self.summary(org=False)
-            return self.y_adj
         
         if return_optima:                
             return {'loss': self.theoretical_loss, 'roc': self.roc}
