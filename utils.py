@@ -134,7 +134,7 @@ def cross_val2(classifier, data, label, groups_condition, sensitive_features, po
         'acc': [],
         'f1': []
     }
-    pred = []
+    pred = None
     for train, test in fold.split(data):
         data = data.copy()
         df_train = data.iloc[train]
@@ -146,7 +146,7 @@ def cross_val2(classifier, data, label, groups_condition, sensitive_features, po
         else:
             run_metrics, predtemp = _model_train2(df_train, df_test, label, model, defaultdict(
                 list), groups_condition, sensitive_features, positive_label, exp)
-            pred.append(predtemp.tolist())
+            pred = predtemp if pred is None else pred.append(predtemp)
         for k in metrics.keys():
             metrics[k].append(run_metrics[k])
     return model, metrics, pred
@@ -207,6 +207,7 @@ def _model_train2(df_train, df_test, label, classifier, metrics, groups_conditio
               sensitive_features=df_train[sensitive_features]) if exp else model.fit(x_train, y_train)
     pred = model.predict(x_test)
     df_pred = df_test.copy()
+    df_pred['y_true'] = df_pred[label]
     df_pred[label] = pred
     metrics['stat_par'].append(statistical_parity(
         df_pred, groups_condition, label, positive_label))
@@ -216,7 +217,7 @@ def _model_train2(df_train, df_test, label, classifier, metrics, groups_conditio
         y_true=y_test, y_pred=pred, sensitive_features=df_test[sensitive_features].values))
     metrics['acc'].append(accuracy_score(y_test, pred))
     metrics['f1'].append(f1_score(y_test, pred, average='weighted'))
-    return metrics, pred
+    return metrics, df_pred
 
 
 def print_metrics(metrics):
