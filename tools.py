@@ -1478,7 +1478,7 @@ def fd_plot(grid,
 def cv_predict(y, y_, a,
                goal='strict',
                loss='macro',
-               n_folds=5,
+               n_folds=10,
                stratify=None,
                shuffle=False,
                seed=None):

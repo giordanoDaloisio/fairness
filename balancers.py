@@ -526,7 +526,7 @@ class MulticlassBalancer:
                  a,
                  data=None,
                  preds_are_probs=False,
-                 summary=False):
+                 summary=True):
 
         """Initializes an instance of a PredictionBalancer.
         
@@ -1132,7 +1132,7 @@ class MulticlassBalancer:
                cv=False,
                shuffle=False,
                seed=None,
-               n_folds=5):
+               n_folds=10):
         """Adjusts predictions to satisfy a fairness constraint.
         
         Parameters
@@ -1298,9 +1298,9 @@ class MulticlassBalancer:
                                                 self.m)
             self.brier_score = tools.brier_score(self.y, 
                                                  preds_as_probs)
-            
         if summary:
             self.summary(org=False)
+        return self.yt
     
     def predict(self, y_, a, seed=2021):
         """Generates bias-adjusted predictions on new data.
