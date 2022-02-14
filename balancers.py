@@ -961,8 +961,7 @@ class MulticlassBalancer:
                                                 self.a, 
                                                 self.m)
             self.brier_score = tools.brier_score(self.y, 
-                                                 preds_as_probs)
-            
+                                                 preds_as_probs)            
         if summary:
             self.summary(org=False)
     
