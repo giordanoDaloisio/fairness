@@ -1493,7 +1493,7 @@ def cv_predict(y, y_, a,
         b = balancers.MulticlassBalancer(y[train],
                                          y_[train],
                                          a[train])
-        b.adjust_new(goal=goal, loss=loss)
+        b.adjust_new(goal=goal, loss=loss,summary=False)
         preds = b.predict(y_[test], a[test])
         df = pd.DataFrame([y[test],
                            y_[test],

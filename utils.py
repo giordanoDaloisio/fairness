@@ -528,3 +528,47 @@ def gridcomparison(dfs, dfsm, ys, ysm, iter, iterm, types, metrics):
         0.5, -0.03), ncol=4, prop={'size': 15}, fancybox=True, shadow=True)
     fig.savefig('img/GridMultiSingleVar.pdf',
                 bbox_extra_artists=(lgd,), bbox_inches='tight')
+
+
+
+def blackboxCVmetrics( data, label, y_true, unpriv_group, pred ):
+    #I prepare folds such that each one contains all the unique values of the label feature. Otherwise, MulticlassBalancer won't be able to work.
+
+    from sklearn.model_selection import KFold
+    from balancers import MulticlassBalancer
+
+    kf = KFold(n_splits = 10)
+    okbool = False
+    uniquevalues = data[label].unique().size
+
+
+    while(not okbool):
+        folds = []
+        pred = pred.sample(frac=1).reset_index(drop=True)
+        for train, test in kf.split(y_true):
+            if( pred.loc[test, 'y_true'].unique().size >= uniquevalues and pred.loc[test,label].unique().size >= uniquevalues):
+                okbool = True
+                folds.append(test)
+
+
+    out = []
+    bbmetrics = []
+        
+    for fold in folds:
+        pb = MulticlassBalancer(y = 'y_true', y_=label, a='combined', data=pred.loc[fold])
+
+        y_adj = pb.adjust(cv = True, summary = False)
+        datapred = deepcopy(pred)
+        datapred.loc[fold,label] = y_adj
+
+        bbmetrics.append( get_metrics( data, datapred , unpriv_group, label, 1) )
+
+    blackboxmetrics = {}
+    for metric in bbmetrics[0]:
+        temparr = []
+        for i in range(len(bbmetrics)):
+            temparr.append( bbmetrics[i].get(metric) )
+        
+        blackboxmetrics[metric] = ( np.mean(temparr) )
+
+    return blackboxmetrics

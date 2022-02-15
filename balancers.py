@@ -1279,24 +1279,23 @@ class MulticlassBalancer:
             
             # Getting the new CP matrices for Y~
             group_ids = [np.where(preds.a == g) for g in self.groups]
-            self.m = np.array([tools.cp_mat(self.y_[ids],
-                                            self.yt[ids])
-                               for ids in group_ids])
-            self.new_cp_mats = np.array([tools.cp_mat(self.y[ids],
-                                                      self.yt[ids])
-                                         for ids in group_ids])
+            #self.m = np.array([tools.cp_mat(self.y_[ids],
+            #                   for ids in group_ids])
+            #self.new_cp_mats = np.array([tools.cp_mat(self.y[ids],
+            #                                          self.yt[ids])
+            #                             for ids in group_ids])
             
             # Calculating group-specific ROC scores from the new parameters
-            self.rocs = np.array([tools.cpmat_to_roc(self.p_y_a[i],
-                                                     self.new_cp_mats[i])
-                                  for i in range(self.n_groups)])
-            self.loss = 1 - np.sum(self.p_vecs * self.rocs[:, :, 1])
-            self.macro_loss = 1 - np.mean(self.rocs[:, :, 1])
-            preds_as_probs = tools.cat_to_probs(self.y_,
-                                                self.a, 
-                                                self.m)
-            self.brier_score = tools.brier_score(self.y, 
-                                                 preds_as_probs)
+            #self.rocs = np.array([tools.cpmat_to_roc(self.p_y_a[i],
+            #                                         self.new_cp_mats[i])
+            #                      for i in range(self.n_groups)])
+            #self.loss = 1 - np.sum(self.p_vecs * self.rocs[:, :, 1])
+            #self.macro_loss = 1 - np.mean(self.rocs[:, :, 1])
+            #preds_as_probs = tools.cat_to_probs(self.y_,
+            #                                    self.a, 
+            #                                   self.m)
+            #self.brier_score = tools.brier_score(self.y, 
+            #                                     preds_as_probs)
         if summary:
             self.summary(org=False)
         return self.yt
