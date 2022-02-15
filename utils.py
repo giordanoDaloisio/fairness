@@ -550,17 +550,15 @@ def blackboxCVmetrics( data, label, y_true, unpriv_group, pred ):
                 okbool = True
                 folds.append(test)
 
-
-    out = []
     bbmetrics = []
         
     for fold in folds:
+        print(pred.loc[fold])
         pb = MulticlassBalancer(y = 'y_true', y_=label, a='combined', data=pred.loc[fold])
 
         y_adj = pb.adjust(cv = True, summary = False)
         datapred = deepcopy(pred)
         datapred.loc[fold,label] = y_adj
-
         bbmetrics.append( get_metrics( data, datapred , unpriv_group, label, 1) )
 
     blackboxmetrics = {}
