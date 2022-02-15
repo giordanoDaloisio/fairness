@@ -1114,7 +1114,7 @@ def odds_ratio(y, pred, round=2):
 
 def cp_mat(y, y_):
     '''Returns the matrix of conditional probabilities y_ | y'''
-    tab = pd.crosstab(y, y_).values
+    tab = pd.crosstab(y, y_, dropna=False).reindex(fill_value=0.0).values
     probs = tab.transpose() / tab.sum(axis=1)
     return probs.transpose()
 

@@ -32,9 +32,10 @@ def disparate_impact(data_pred: pd.DataFrame, group_condition: dict, label_name:
                          / len(data_pred.query(query)))
     priv_group_prob = (len(data_pred.query('~(' + query + ')&' + label_query))
                        / len(data_pred.query('~(' + query+')')))
-    #if( (unpriv_group_prob == 0) & (priv_group_prob == 0) ):
-     #   return 0
-    return min(unpriv_group_prob / priv_group_prob, priv_group_prob/unpriv_group_prob) if unpriv_group_prob != 0 else unpriv_group_prob / priv_group_prob
+    if( (unpriv_group_prob == 0) ):
+        return 1
+    else:
+        return min(unpriv_group_prob / priv_group_prob, priv_group_prob/unpriv_group_prob) if unpriv_group_prob != 0 else unpriv_group_prob / priv_group_prob
 
 
 def _compute_tpr_fpr(y_true, y_pred):
@@ -541,7 +542,7 @@ def blackboxCVmetrics( data, label, y_true, unpriv_group, pred ):
     okbool = False
     uniquevalues = data[label].unique().size
 
-
+    attempt = 0
     while(not okbool):
         folds = []
         pred = pred.sample(frac=1).reset_index(drop=True)
@@ -553,7 +554,6 @@ def blackboxCVmetrics( data, label, y_true, unpriv_group, pred ):
     bbmetrics = []
         
     for fold in folds:
-        print(pred.loc[fold])
         pb = MulticlassBalancer(y = 'y_true', y_=label, a='combined', data=pred.loc[fold])
 
         y_adj = pb.adjust(cv = True, summary = False)

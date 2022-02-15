@@ -634,8 +634,19 @@ class MulticlassBalancer:
         p_pred_vecs = np.array([tools.p_vec(y_[ids]) for ids in group_ids])
         self.p_pred_vecs = self.p_a.reshape(-1, 1) * p_pred_vecs
         self.p_vecs = self.p_a.reshape(-1, 1) * p_vecs
+
+        for ids in group_ids:
+            if (  len(np.unique(y[ids])) > len(np.unique(y_[ids]))    ):
+                i = 0
+                for element in np.unique(y[ids]):
+                    tochange = ids[0][i]
+                    y_[tochange] = element
+                    i = i + 1     
+                    
         self.cp_mats = np.array([tools.cp_mat(y[ids], y_[ids]) 
                                  for ids in group_ids])
+
+
         self.cp_mats_t = np.zeros(
                 (self.n_classes, self.n_classes, self.n_groups)
         )
@@ -1330,8 +1341,11 @@ class MulticlassBalancer:
             for j, o in enumerate(outcomes):
                 y_ids = np.where((a == g) & (y_ == o))[0]
                 np.random.seed(seeds[i])
+                p = np.array( self.new_cp_mats[i][j] )
+                p /= p.sum()
+                print(p)
                 y_tilde[y_ids] = np.random.choice(a=outcomes,
-                                                  p=self.new_cp_mats[i][j],
+                                                  p=p ,
                                                   size=len(y_ids))
         return y_tilde
     
