@@ -211,7 +211,22 @@ def _model_train2(df_train, df_test, label, classifier, metrics, groups_conditio
     df_pred['y_true'] = df_pred[label]
     df_pred[label] = pred
     # TODO: unire label sensibili in una su df_pred
+
+    df_pred.loc[:,"combined"] = 0
+    tocomb = deepcopy(df_pred)
+    print(groups_condition)
+    for key,value in groups_condition.items():
+        tocomb = df_pred.loc[ df_pred[key] == value ]
+    
+    df_pred.loc[ tocomb.index, 'combined' ] = 1
+
     # TODO: applicare blackbox su df_pred creando una nuova istanza ogni volta
+
+    print(df_pred)
+    df_pred = blackbox(df_pred, label)
+
+    print(df_pred)
+
     metrics['stat_par'].append(statistical_parity(
         df_pred, groups_condition, label, positive_label))
     metrics['disp_imp'].append(disparate_impact(
@@ -571,6 +586,18 @@ def blackboxCVmetrics( data, label, y_true, unpriv_group, pred ):
         blackboxmetrics[metric] = ( np.mean(temparr) )
 
     return blackboxmetrics, bbmetrics
+
+
+
+def blackbox(pred, label):
+    from balancers import MulticlassBalancer
+
+    pb = MulticlassBalancer(y = 'y_true', y_ = label, a = 'combined', data = pred)
+    y_adj = pb.adjust(cv = True, summary = False)
+    pred[label] = y_adj
+
+    return pred
+
 
 def save_metrics(type, name, metric):
     df = pd.DataFrame(metric)
