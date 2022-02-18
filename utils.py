@@ -152,6 +152,32 @@ def cross_val2(classifier, data, label, groups_condition, sensitive_features, po
             metrics[k].append(run_metrics[k])
     return model, metrics, pred
 
+def cross_valbin(classifier, data, label, groups_condition, sensitive_features, positive_label, debiaser=None, exp=False, n_splits=10):
+    fold = KFold(n_splits=n_splits, shuffle=True, random_state=2)
+    metrics = {
+        'stat_par': [],
+        'zero_one_loss': [],
+        'disp_imp': [],
+        'acc': [],
+        'f1': []
+    }
+    pred = None
+    for train, test in fold.split(data):
+        data = data.copy()
+        df_train = data.iloc[train]
+        df_test = data.iloc[test]
+        model = deepcopy(classifier)
+        if debiaser:
+            run_metrics = _demv_training(model, debiaser, groups_condition, label,
+                                         df_train, df_test, positive_label, sensitive_features)
+        else:
+            run_metrics, predtemp = _model_trainbin(df_train, df_test, label, model, defaultdict(
+                list), groups_condition, sensitive_features, positive_label, exp)
+            pred = predtemp if pred is None else pred.append(predtemp)
+        for k in metrics.keys():
+            metrics[k].append(run_metrics[k])
+    return model, metrics, pred
+
 
 def eval_demv(k, iters, data, classifier, label, groups, sensitive_features, positive_label=None):
     ris = defaultdict(list)
@@ -221,6 +247,39 @@ def _model_train2(df_train, df_test, label, classifier, metrics, groups_conditio
 
 
     df_pred = blackbox(df_pred, label)
+
+
+    metrics['stat_par'].append(statistical_parity(
+        df_pred, groups_condition, label, positive_label))
+    metrics['disp_imp'].append(disparate_impact(
+        df_pred, groups_condition, label, positive_label=positive_label))
+    metrics['zero_one_loss'].append(zero_one_loss_diff(
+        y_true=y_test, y_pred=pred, sensitive_features=df_test[sensitive_features].values))
+    metrics['acc'].append(accuracy_score(y_test, pred))
+    metrics['f1'].append(f1_score(y_test, pred, average='weighted'))
+    return metrics, df_pred
+
+def _model_trainbin(df_train, df_test, label, classifier, metrics, groups_condition, sensitive_features, positive_label, exp=False):
+    x_train, x_test, y_train, y_test = _train_test_split(
+        df_train, df_test, label)
+    model = deepcopy(classifier)
+    model.fit(x_train, y_train,
+              sensitive_features=df_train[sensitive_features]) if exp else model.fit(x_train, y_train)
+    pred = model.predict(x_test)
+    df_pred = df_test.copy()
+    df_pred['y_true'] = df_pred[label]
+    df_pred[label] = pred
+
+    df_pred.loc[:,"combined"] = 0
+    tocomb = deepcopy(df_pred)
+
+    for key,value in groups_condition.items():
+        tocomb = df_pred.loc[ df_pred[key] == value ]
+    
+    df_pred.loc[ tocomb.index, 'combined' ] = 1
+
+
+    df_pred = blackboxbin(df_pred, label)
 
 
     metrics['stat_par'].append(statistical_parity(
@@ -345,7 +404,7 @@ def plot_gridmulti(dfs, ys, iter, types, metrics, name='GridMulti'):
     fig.set_size_inches(15, 8, forward=True)
 
     gs = fig.add_gridspec(2, 6)
-    ax = np.zeros(5, dtype=object)
+    ax = np.zeros(6, dtype=object)
 
     for k, v in dfs.items():
 
@@ -361,9 +420,11 @@ def plot_gridmulti(dfs, ys, iter, types, metrics, name='GridMulti'):
         elif(i == 2):
             ax[i] = fig.add_subplot(gs[0, 4:])
         elif(i == 3):
-            ax[i] = fig.add_subplot(gs[1, 1:3])
+            ax[i] = fig.add_subplot(gs[1, :2])
         elif(i == 4):
-            ax[i] = fig.add_subplot(gs[1, 3:5])
+            ax[i] = fig.add_subplot(gs[1, 2:4])
+        elif(i == 5):
+            ax[i] = fig.add_subplot(gs[1, 4:])
 
         for key, v in metrics.items():
             ax[i] = sns.lineplot(data=df, y=key, x='stop', label=v, )
@@ -590,6 +651,15 @@ def blackbox(pred, label):
 
     pb = MulticlassBalancer(y = 'y_true', y_ = label, a = 'combined', data = pred)
     y_adj = pb.adjust(cv = True, summary = False)
+    pred[label] = y_adj
+
+    return pred
+
+def blackboxbin(pred, label):
+    from balancers import BinaryBalancer
+
+    pb = BinaryBalancer(y = 'y_true', y_ = label, a = 'combined', data = pred)
+    y_adj = pb.adjust(summary = False)
     pred[label] = y_adj
 
     return pred
