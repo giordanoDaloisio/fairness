@@ -210,6 +210,8 @@ def _model_train2(df_train, df_test, label, classifier, metrics, groups_conditio
     df_pred = df_test.copy()
     df_pred['y_true'] = df_pred[label]
     df_pred[label] = pred
+    # TODO: unire label sensibili in una su df_pred
+    # TODO: applicare blackbox su df_pred creando una nuova istanza ogni volta
     metrics['stat_par'].append(statistical_parity(
         df_pred, groups_condition, label, positive_label))
     metrics['disp_imp'].append(disparate_impact(
@@ -542,7 +544,6 @@ def blackboxCVmetrics( data, label, y_true, unpriv_group, pred ):
     okbool = False
     uniquevalues = data[label].unique().size
 
-    attempt = 0
     while(not okbool):
         folds = []
         pred = pred.sample(frac=1).reset_index(drop=True)
@@ -569,7 +570,7 @@ def blackboxCVmetrics( data, label, y_true, unpriv_group, pred ):
         
         blackboxmetrics[metric] = ( np.mean(temparr) )
 
-    return blackboxmetrics
+    return blackboxmetrics, bbmetrics
 
 def save_metrics(type, name, metric):
     df = pd.DataFrame(metric)
