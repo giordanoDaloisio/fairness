@@ -570,3 +570,7 @@ def blackboxCVmetrics( data, label, y_true, unpriv_group, pred ):
         blackboxmetrics[metric] = ( np.mean(temparr) )
 
     return blackboxmetrics
+
+def save_metrics(type, name, metric):
+    df = pd.DataFrame(metric)
+    df.explode(list(df.columns)).to_csv(f'ris/{name}_{type}.csv')
