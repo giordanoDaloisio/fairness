@@ -403,8 +403,8 @@ def plot_gridmulti(dfs, ys, iter, types, metrics, name='GridMulti'):
     fig = plt.figure(dpi=60, tight_layout=True)
     fig.set_size_inches(15, 8, forward=True)
 
-    gs = fig.add_gridspec(2, 6)
-    ax = np.zeros(6, dtype=object)
+    gs = fig.add_gridspec(3, 6)
+    ax = np.zeros(8, dtype=object)
 
     for k, v in dfs.items():
 
@@ -425,6 +425,10 @@ def plot_gridmulti(dfs, ys, iter, types, metrics, name='GridMulti'):
             ax[i] = fig.add_subplot(gs[1, 2:4])
         elif(i == 5):
             ax[i] = fig.add_subplot(gs[1, 4:])
+        elif(i == 6):
+            ax[i] = fig.add_subplot(gs[2, 1:3])
+        elif(i == 7):
+            ax[i] = fig.add_subplot(gs[2, 3:5])
 
         for key, v in metrics.items():
             ax[i] = sns.lineplot(data=df, y=key, x='stop', label=v, )

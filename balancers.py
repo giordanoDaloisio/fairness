@@ -643,6 +643,13 @@ class MulticlassBalancer:
                     y_[tochange] = element
                     i = i + 1     
                     
+            if ( len(np.unique(y_[ids]))> len(np.unique(y[ids]))):
+                i = 0
+                for element in np.unique(y_[ids]):
+                    tochange = ids[0][i]
+                    y[tochange] = element
+                    i = i + 1     
+                
         self.cp_mats = np.array([tools.cp_mat(y[ids], y_[ids]) 
                                  for ids in group_ids])
 
