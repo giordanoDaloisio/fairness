@@ -15,7 +15,7 @@ import seaborn as sns
 # METRICS
 
 
-def statistical_parity(data_pred: pd.DataFrame, group_condition: dict, label_name: str, positive_label: str):
+def statistical_parity2(data_pred: pd.DataFrame, group_condition: dict, label_name: str, positive_label: str):
     query = '&'.join([f'{k}=={v}' for k, v in group_condition.items()])
     label_query = label_name+'=='+str(positive_label)
     unpriv_group_prob = (len(data_pred.query(query + '&' + label_query))
@@ -23,6 +23,38 @@ def statistical_parity(data_pred: pd.DataFrame, group_condition: dict, label_nam
     priv_group_prob = (len(data_pred.query('~(' + query + ')&' + label_query))
                        / len(data_pred.query('~(' + query+')')))
     return unpriv_group_prob - priv_group_prob
+
+
+def equalized_odds(data_pred: pd.DataFrame, group_condition: dict, label_name: str, positive_label: str):
+    query = '&'.join([f'{k}=={v}' for k, v in group_condition.items()])
+    label_query = label_name+'=='+str(positive_label)
+    tpr_query = 'y_true == ' + str(positive_label)
+    if(  len(data_pred.query(query + '&' + label_query)) == 0 ):
+        unpriv_group_tpr = 0
+    else:
+        unpriv_group_tpr = (len(data_pred.query(query + '&' + label_query + '&' + tpr_query))
+                            / len(data_pred.query(query + '&' + label_query)))
+
+
+    if ( len(data_pred.query('~(' + query+')&' + label_query)) == 0  ):
+        priv_group_tpr = 0
+    else:
+        priv_group_tpr = (len(data_pred.query('~(' + query + ')&' + label_query + '&' + tpr_query))
+                        / len(data_pred.query('~(' + query+')&' + label_query)) )
+
+    if (len(data_pred.query(query + '& ~(' + label_query + ')')) == 0 ):
+        unpriv_group_fpr = 0
+    else: 
+        unpriv_group_fpr = (len(data_pred.query(query + '&' + label_query + '& ~(' + tpr_query + ')'))
+                            / len(data_pred.query(query + '& ~(' + label_query + ')')))
+
+    if ( len(data_pred.query('~(' + query+')& ~(' + label_query +')')) == 0):
+        priv_group_fpr = 0
+    else:
+        priv_group_fpr = (len(data_pred.query('~(' + query + ')&' + label_query + '& ~(' + tpr_query + ')'))
+                        / len(data_pred.query('~(' + query+')& ~(' + label_query +')')))
+
+    return max ( np.abs(unpriv_group_tpr - priv_group_tpr) , np.abs(unpriv_group_fpr - priv_group_fpr) )
 
 
 def disparate_impact(data_pred: pd.DataFrame, group_condition: dict, label_name: str, positive_label: str):
@@ -81,7 +113,7 @@ def get_metrics(df_true: pd.DataFrame, df_pred: pd.DataFrame, groups_condition: 
     y_test = df_true
     y_pred = df_pred
     metrics = defaultdict(list)
-    metrics['stat_par'].append(statistical_parity(
+    metrics['eq_odds'].append(equalized_odds(
         df_pred, groups_condition, label, positive_label))
     metrics['disp_imp'].append(disparate_impact(
         df_pred, groups_condition, label, positive_label=positive_label))
@@ -105,7 +137,7 @@ def _train_test_split(df_train, df_test, label):
 def cross_val(classifier, data, label, groups_condition, sensitive_features, positive_label, debiaser=None, exp=False, n_splits=10):
     fold = KFold(n_splits=n_splits, shuffle=True, random_state=2)
     metrics = {
-        'stat_par': [],
+        'eq_odds': [],
         'zero_one_loss': [],
         'disp_imp': [],
         'acc': [],
@@ -129,7 +161,7 @@ def cross_val(classifier, data, label, groups_condition, sensitive_features, pos
 def cross_val2(classifier, data, label, groups_condition, sensitive_features, positive_label, debiaser=None, exp=False, n_splits=10):
     fold = KFold(n_splits=n_splits, shuffle=True, random_state=2)
     metrics = {
-        'stat_par': [],
+        'eq_odds': [],
         'zero_one_loss': [],
         'disp_imp': [],
         'acc': [],
@@ -155,7 +187,7 @@ def cross_val2(classifier, data, label, groups_condition, sensitive_features, po
 def cross_valbin(classifier, data, label, groups_condition, sensitive_features, positive_label, debiaser=None, exp=False, n_splits=10):
     fold = KFold(n_splits=n_splits, shuffle=True, random_state=2)
     metrics = {
-        'stat_par': [],
+        'eq_odds': [],
         'zero_one_loss': [],
         'disp_imp': [],
         'acc': [],
@@ -214,8 +246,9 @@ def _model_train(df_train, df_test, label, classifier, metrics, groups_condition
               sensitive_features=df_train[sensitive_features]) if exp else model.fit(x_train, y_train)
     pred = model.predict(x_test)
     df_pred = df_test.copy()
+    df_pred['y_true'] = df_pred[label]
     df_pred[label] = pred
-    metrics['stat_par'].append(statistical_parity(
+    metrics['eq_odds'].append(equalized_odds(
         df_pred, groups_condition, label, positive_label))
     metrics['disp_imp'].append(disparate_impact(
         df_pred, groups_condition, label, positive_label=positive_label))
@@ -249,7 +282,7 @@ def _model_train2(df_train, df_test, label, classifier, metrics, groups_conditio
     df_pred = blackbox(df_pred, label)
 
 
-    metrics['stat_par'].append(statistical_parity(
+    metrics['eq_odds'].append(equalized_odds(
         df_pred, groups_condition, label, positive_label))
     metrics['disp_imp'].append(disparate_impact(
         df_pred, groups_condition, label, positive_label=positive_label))
@@ -282,7 +315,7 @@ def _model_trainbin(df_train, df_test, label, classifier, metrics, groups_condit
     df_pred = blackboxbin(df_pred, label)
 
 
-    metrics['stat_par'].append(statistical_parity(
+    metrics['eq_odds'].append(equalized_odds(
         df_pred, groups_condition, label, positive_label))
     metrics['disp_imp'].append(disparate_impact(
         df_pred, groups_condition, label, positive_label=positive_label))
@@ -294,14 +327,12 @@ def _model_trainbin(df_train, df_test, label, classifier, metrics, groups_condit
 
 
 def print_metrics(metrics):
-    print('Statistical parity: ', round(np.mean(
-        metrics['stat_par']), 3), ' +- ', round(np.std(metrics['stat_par']), 3))
+    print('Equalized odds: ', round(np.mean(
+        metrics['eq_odds']), 3), ' +- ', round(np.std(metrics['eq_odds']), 3))
     print('Disparate impact: ', round(np.mean(
         metrics['disp_imp']), 3), ' +- ', round(np.std(metrics['disp_imp']), 3))
     print('Zero one loss: ', round(np.mean(
         metrics['zero_one_loss']), 3), ' +- ', round(np.std(metrics['zero_one_loss']), 3))
-    print('F1 score: ', round(
-        np.mean(metrics['f1']), 3), ' +- ', round(np.std(metrics['f1']), 3))
     print('Accuracy score: ', round(np.mean(
         metrics['acc']), 3), ' +- ', round(np.std(metrics['acc']), 3))
 
@@ -327,7 +358,7 @@ def plot_group_percentage(data, protected_vars: list, label_name, label_value):
 
 def plot_metrics_curves(df, points, title=''):
 
-    metrics = {'stat_par': 'Statistical Parity', 'zero_one_loss': 'Zero One Loss',
+    metrics = {'eq_odds': 'Equalized odds', 'zero_one_loss': 'Zero One Loss',
                'disp_imp': 'Disparate Impact', 'acc': 'Accuracy'}
     _, ax = plt.subplots(1, 1, figsize=(10, 8))
     for k, v in metrics.items():
@@ -463,13 +494,13 @@ def plot_gridmulti(dfs, ys, iter, types, metrics, name='GridMulti'):
 
 def preparepoints(metrics, iters):
 
-    types = {'Stastical Parity (Blackbox)': 'xb',
+    types = {'Equalized odds (Blackbox)': 'xb',
              'Zero One Loss (Blackbox)': 'xy',
              'Disparate Impact (Blackbox)': 'xg',
              'Accuracy (Blackbox)': 'xr',
              }
 
-    rename = {'Stastical Parity (Blackbox)': 'stat_par',
+    rename = {'Equalized odds (Blackbox)': 'eq_odds',
               'Zero One Loss (Blackbox)': 'zero_one_loss',
               'Disparate Impact (Blackbox)': 'disp_imp',
               'Accuracy (Blackbox)': 'acc'
